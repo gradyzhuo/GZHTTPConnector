@@ -80,11 +80,11 @@ class GZHTTPConnection:NSObject {
         static var once_token : dispatch_once_t = 0
     }
     
-    func startConnecting(){
+    private func startConnecting(){
         UIApplication.sharedApplication().networkActivityIndicatorVisible = true
     }
     
-    func stopConnecting(){
+    private func stopConnecting(){
         
         self.session.getTasksWithCompletionHandler { (dataTasks:[AnyObject]!, downloadTasks:[AnyObject]!, uploadTasks:[AnyObject]!) -> Void in
             
@@ -164,7 +164,6 @@ class GZHTTPConnection:NSObject {
             request.HTTPMethod = connectorData.HTTPMethod.rawValue
             
             switch connectorData.inputValueType {
-                
             case let .FileUpload(boundary):
                 var uploadData = connectorData.senderData()
                 request.setValue("\(uploadData.length)", forHTTPHeaderField: "Content-Length")
@@ -556,9 +555,11 @@ enum GZHTTPConnectionDataMethod:String{
     case DELETE = "DELETE"
 }
 
+
 enum GZHTTPConnectionInputValueType{
     case JSON, KeyValue
-    case FileUpload(String)//Boundary
+    /** Uploading file and give a 'Boundary'. Params format: .FileUpload( Boundary:String )  */
+    case FileUpload(boundary:String)
 }
 
 enum GZHTTPConnectionOutputValueType:Int{
@@ -573,6 +574,7 @@ enum GZHTTPConnectionFileContentType:String{
     case None = "none/none"
     case All = "application/octet-stream"
     case JPEG = "image/jpeg"
+    case PNG = "image/png"
 }
 
 class GZHTTPConnectionValueParam{
@@ -598,7 +600,6 @@ class GZHTTPConnectionStringValueParam: GZHTTPConnectionValueParam {
     init(key:String, stringValue:String){
         
         super.init(key: key, value: stringValue)
-        
     }
     
 }
@@ -626,6 +627,10 @@ class GZHTTPConnectionFileValueParam: GZHTTPConnectionValueParam {
         
     }
     
+    convenience init(filename:String, key: String, fileData: NSData) {
+        self.init(contentType:.All, filename:filename, key: key, fileData: fileData)
+    }
+    
     convenience init(contentType:GZHTTPConnectionFileContentType, filename:String, key: String, fileData: NSData) {
         self.init(key: key, fileData: fileData)
         
@@ -650,6 +655,7 @@ class GZHTTPConnectionImageDataValueParam: GZHTTPConnectionFileValueParam {
     }
     
 }
+
 
 // MARK: - GZHTTPConnectionData
 
@@ -861,46 +867,57 @@ extension GZHTTPConnectionData {
         self.paramsArray.append(param)
     }
     
-    func addParam(key:String, boolValue value:Bool?){
+    func addParam(#key:String, boolValue value:Bool?){
         var defaultValue = false
         
-        self.addParam(key, intValue: Int(value ?? defaultValue))
+        self.addParam(key: key, intValue: Int(value ?? defaultValue))
     }
     
-    func addParam(key:String, intValue value:Int?){
+    func addParam(#key:String, intValue value:Int?){
         var defaultValue = 0
         var stringValue = "\(value ?? defaultValue)"
-        self.addParam(key, stringValue: stringValue)
+        self.addParam(key: key, stringValue: stringValue)
     }
     
-    func addParam(key:String, stringValue value:String?){
+    func addParam(#key:String, stringValue value:String?){
         var defaultValue = ""
         self.addParam(GZHTTPConnectionStringValueParam(key: key, stringValue: value ?? defaultValue))
     }
     
-    func addParam(key:String, stringValueFromArray value:[AnyObject]?, componentsJoinedByString separator:String = ","){
+    func addParam(#key:String, stringValueFromArray value:[AnyObject]?, componentsJoinedByString separator:String = ","){
         var defaultValue:[AnyObject] = []
         var stringValue = (value ?? defaultValue).combine(separator)
-        self.addParam(key, stringValue: stringValue)
+        self.addParam(key: key, stringValue: stringValue)
     }
     
-    func addParam(contentType:GZHTTPConnectionFileContentType, filename:String, key:String, fileData value:NSData?){
+    func addParam(#key:String, fileData value:NSData?, contentType:GZHTTPConnectionFileContentType, filename:String){
         var defaultValue = NSData()
         self.addParam(GZHTTPConnectionImageDataValueParam(contentType: contentType, filename: filename, key: key, fileData: value ?? defaultValue))
     }
     
-    func addAnyFileDataValueParam(filename:String, key:String, fileData value:NSData?){
-        self.addParam(.All, filename: filename, key: key, fileData: value)
+    func addAnyFileDataValueParam(#key:String, fileData value:NSData?, filename:String){
+        self.addParam(key: key, fileData: value, contentType: .All, filename: filename)
     }
     
-    func addJPEGImageDataValueParam(filename:String, key:String, fileData value:NSData?){
-        self.addParam(.JPEG, filename: filename, key: key, fileData: value)
+    func addJPEGImageDataValueParam(#key:String, fileData value:NSData?, filename:String){
+        self.addParam(key: key, fileData: value, contentType: .JPEG, filename: filename)
     }
     
-    func addJPEGImageDataValueParam(filename:String, key:String, image:UIImage!, compressionQuality:CGFloat){
+    func addJPEGImageDataValueParam(#key:String, image:UIImage!, filename:String, compressionQuality:CGFloat){
         
         var data = UIImageJPEGRepresentation(image, compressionQuality)
-        self.addJPEGImageDataValueParam(filename, key: key, fileData: data)
+        self.addJPEGImageDataValueParam(key: key, fileData: data, filename: filename)
+        
+    }
+    
+    func addPNGImageDataValueParam(#key:String, fileData value:NSData?, filename:String){
+        self.addParam(key: key, fileData: value, contentType: .PNG, filename: filename)
+    }
+    
+    func addPNGImageDataValueParam(#key:String, image:UIImage!, filename:String){
+        
+        var data = UIImagePNGRepresentation(image)
+        self.addPNGImageDataValueParam(key: key, fileData: data, filename: filename)
         
     }
     
