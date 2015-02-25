@@ -134,7 +134,7 @@ class GZHTTPConnection:NSObject {
         var request = NSMutableURLRequest(URL: url)
         
         connectorData.prepare()
-        connectorData.recusiveSenderData()
+        connectorData.recusiveDependedConnectorDatas()
         
         for (k, v) in connectorData.extraHeaderFields {
             request.addValue(v, forHTTPHeaderField: k)
@@ -665,11 +665,12 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     var sessionTask:NSURLSessionTask?
     var sessionDelegateQueue:NSOperationQueue?
     var becomeSessionDelegate:Bool = false
-    
-//    var paramsDict:[String:GZHTTPConnectionValueParam] = [:]
+
     var paramsArray:[GZHTTPConnectionValueParam] = []
     
-    private var finalParamsArrayForConnection:[GZHTTPConnectionValueParam] = []
+    var finalParams:[GZHTTPConnectionValueParam] {
+        return self.privateCache.finalParamsArrayForConnection
+    }
     
     var HTTPMethod:GZHTTPConnectionDataMethod{
         get{
@@ -693,6 +694,8 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     
     var dependedConnectorDatas : [GZHTTPConnectionData] = [GZHTTPConnectionData]()
     
+    var removeDuplicatedKeysInDependedDatas:Bool = true
+    
     var extraHeaderFields:[String:String] = [:]
     
 //    var boundary:String = ""
@@ -707,19 +710,28 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         
     }
     
-    func recusiveSenderData(){
-        self.recusiveSenderData(self)
+    func recusiveDependedConnectorDatas(){
+        
+        self.recusiveDependedConnectorDatas(self.dependedConnectorDatas)
+        
+        
+        self.willConvertToSenderData()
+        if self.removeDuplicatedKeysInDependedDatas {
+            for param in self.paramsArray {
+                self.removeFinalParam(param)
+            }
+        }
+
+        self.privateCache.finalParamsArrayForConnection += self.paramsArray
+        
     }
     
-    func recusiveSenderData(connectorData:GZHTTPConnectionData){
-        
-        connectorData.willConvertToSenderData()
+    func recusiveDependedConnectorDatas(connectorDatas:[GZHTTPConnectionData]){
 
-        var paramsArray = connectorData.paramsArray
-        self.finalParamsArrayForConnection += paramsArray
-        
-        for depended in connectorData.dependedConnectorDatas {
-            self.recusiveSenderData(depended)
+        for connectorData in connectorDatas {
+            connectorData.willConvertToSenderData()
+            self.privateCache.finalParamsArrayForConnection += connectorData.paramsArray
+            self.recusiveDependedConnectorDatas(connectorData.dependedConnectorDatas)
         }
         
     }
@@ -728,11 +740,9 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         
         var resultString = ""
         
-//        var allkeys = self.paramsDict.keys.array
-        
         var stringConnector = ""
         
-        for param in self.finalParamsArrayForConnection {
+        for param in self.finalParams {
             
             var keyValueString = "\(param.key)=\(param.value)"
             resultString += "\(stringConnector)\(keyValueString)"
@@ -749,7 +759,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         
         var stringConnector = ""
         
-        for param in self.finalParamsArrayForConnection {
+        for param in self.finalParams {
             
             var keyValueString = "\(param.key)=\(param.value)"
             
@@ -764,7 +774,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     func getJSONObject()->[NSObject:AnyObject] {
         var JSONObject:[NSObject:AnyObject] = [:]
         
-        for param in self.finalParamsArrayForConnection {
+        for param in self.finalParams {
             JSONObject[param.key] = param.value
         }
 
@@ -786,7 +796,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
             fileBoundary = "-----\(NSDate().timeIntervalSince1970)"
         }
         
-        for param in self.finalParamsArrayForConnection {
+        for param in self.finalParams {
             data.appendData("--\(fileBoundary)\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
             
             switch param.type {
@@ -853,16 +863,15 @@ extension GZHTTPConnectionData {
     private struct PrivateCache {
         
         var session:NSURLSession! = nil
-        
-        
+        var finalParamsArrayForConnection:[GZHTTPConnectionValueParam] = []
         
     }
     
 }
 
-
+//MARK: - add params
 extension GZHTTPConnectionData {
-
+    
     func addParam(param:GZHTTPConnectionValueParam){
         self.paramsArray.append(param)
     }
@@ -921,40 +930,26 @@ extension GZHTTPConnectionData {
         
     }
     
-//    func addFileValueParam(key:String, value:){
-//        self.addParam(GZHTTPConnectionStringValueParam(key: key, value: value))
-//    }
-//    
-
-//    func setParams<T>(#key:String, image:UIImage, imageType:GZHTTPConnectionFileContentType){
-//
-//        var param = GZHTTPConnectionFileValueParam(value: UIImageJPEGRepresentation(image, 0.8))
-//        param.contentType = imageType
-//        self.setParams(key: key, value: param)
-//
-//    }
-
 }
 
-//extension GZHTTPConnectionData {
-//
-//    subscript(key:String)->AnyObject{
-//
-//
-//        get{
-//            return self.paramsDict[key]!.value
-//        }
-//
-//        set(value){
-//
-//            println("key:\(key) value:\(value)")
-//            
-//            self.setParams(key: key, value: value)
-//            
-//        }
-//        
-//    }
-//    
-//    
-//    
-//}
+
+//MARK: - remove param
+extension GZHTTPConnectionData {
+    
+    private func removeFinalParam(forKey key:String){
+        self.privateCache.finalParamsArrayForConnection = self.finalParams.filter{ return $0.key != key }
+    }
+    
+    private func removeFinalParam(param:GZHTTPConnectionValueParam){
+        self.removeFinalParam(forKey: param.key)
+    }
+    
+    func removeParam(forKey key:String){
+        self.paramsArray = self.paramsArray.filter{ return $0.key != key }
+    }
+    
+    func removeParam(param:GZHTTPConnectionValueParam){
+        self.removeParam(forKey: param.key)
+    }
+    
+}
