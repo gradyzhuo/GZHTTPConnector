@@ -33,15 +33,18 @@ class GZHTTPConnection:NSObject {
     
     var delegateQueue:NSOperationQueue = NSOperationQueue.mainQueue()
     
-    lazy var session:NSURLSession = {
-        
-        var sessionConfig = NSURLSessionConfiguration.defaultSessionConfiguration()
-        sessionConfig.allowsCellularAccess = true
-        
-        var customSession:NSURLSession = NSURLSession(configuration:sessionConfig , delegate: self, delegateQueue: self.delegateQueue)
-        
-        return customSession
-    }()
+    
+    var session:NSURLSession? = nil
+    
+//    lazy var session:NSURLSession = {
+//        
+//        var sessionConfig = NSURLSessionConfiguration.defaultSessionConfiguration()
+//        sessionConfig.allowsCellularAccess = true
+//        
+//        var customSession:NSURLSession = NSURLSession(configuration:sessionConfig , delegate: self, delegateQueue: self.delegateQueue)
+//        
+//        return customSession
+//    }()
     
     lazy var backgroundSession:NSURLSession = {
         var timeStamp = NSDate().timeIntervalSince1970
@@ -84,8 +87,7 @@ class GZHTTPConnection:NSObject {
     }
     
     
-    // MARK: default connector 
-    
+    // MARK: default connector
     func defaultConnectionByDefaultHostURL(api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
         
         var APIURL = self.hostURL.URLByAppendingPathComponent(api)
@@ -161,32 +163,14 @@ class GZHTTPConnection:NSObject {
     
     func defaultConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask? {
         
-        if !self.checkISNetworkReachable(failHandler){
-            return nil
-        }
-        
-        
-        self.startConnecting()
-        
-        var session = self.session
-        
-        if connectorData.becomeSessionDelegate {
-            
-            connectorData.sessionConfiguration = connectorData.sessionConfiguration ?? NSURLSessionConfiguration.defaultSessionConfiguration()
-            
-            connectorData.sessionDelegateQueue = connectorData.sessionDelegateQueue ?? NSOperationQueue.mainQueue()
-            
-            session = NSURLSession(configuration: connectorData.sessionConfiguration, delegate: connectorData, delegateQueue: connectorData.sessionDelegateQueue)
-            
-            connectorData.privateCache.session = session
-            
-        }
+        var session = self.__prepareConnectionSession(request: request, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler)
         
         var task:NSURLSessionTask? = session.dataTaskWithRequest(request, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
             self.connectionCompletionHandler(connectorData, url:request.URL, data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
         })
-        
-        connectorData.sessionTask = task
+
+        connectorData.privateCache.sessionTask = task
+        connectorData.privateCache.session = session
         
         return task
     }
@@ -194,6 +178,24 @@ class GZHTTPConnection:NSObject {
     
     func defaultUploadConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData, fromData uploadData:NSData!, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSessionTask?{
         
+        var session = self.__prepareConnectionSession(request: request, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler)
+        
+        connectorData.privateCache.session = session
+        
+        var task = session.uploadTaskWithRequest(request, fromData:uploadData, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
+            self.connectionCompletionHandler(connectorData, url:request.URL ,data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
+        })
+        
+        connectorData.privateCache.sessionTask = task
+        
+        
+        return task
+        
+    }
+    
+    
+    private func __prepareConnectionSession(#request:NSURLRequest, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSession!{
+        
         if !self.checkISNetworkReachable(failHandler){
             return nil
         }
@@ -202,28 +204,17 @@ class GZHTTPConnection:NSObject {
         
         var session = self.session
         
-        if connectorData.becomeSessionDelegate {
-            
+        if session == nil {
             connectorData.sessionConfiguration = connectorData.sessionConfiguration ?? NSURLSessionConfiguration.defaultSessionConfiguration()
+            connectorData.sessionConfiguration?.allowsCellularAccess = true
             
             connectorData.sessionDelegateQueue = connectorData.sessionDelegateQueue ?? NSOperationQueue.mainQueue()
             
             session = NSURLSession(configuration: connectorData.sessionConfiguration, delegate: connectorData, delegateQueue: connectorData.sessionDelegateQueue)
-            
-            connectorData.privateCache.session = session
-            
         }
         
-        var task = session.uploadTaskWithRequest(request, fromData:uploadData, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
-            self.connectionCompletionHandler(connectorData, url:request.URL ,data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
-        })
-        
-        connectorData.sessionTask = task
-        
-        return task
-        
+        return session
     }
-    
     
     func connectionCompletionHandler(connectorData:GZHTTPConnectionData!, url:NSURL!, data:NSData!, response:NSURLResponse!, connectionError:NSError!, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> Void{
         
@@ -285,7 +276,7 @@ extension GZHTTPConnection{
     
     internal func stopConnecting(){
         
-        self.session.getTasksWithCompletionHandler { (dataTasks:[AnyObject]!, downloadTasks:[AnyObject]!, uploadTasks:[AnyObject]!) -> Void in
+        self.session?.getTasksWithCompletionHandler { (dataTasks:[AnyObject]!, downloadTasks:[AnyObject]!, uploadTasks:[AnyObject]!) -> Void in
             
             if (dataTasks.count + downloadTasks.count + uploadTasks.count) == 0 {
                 UIApplication.sharedApplication().networkActivityIndicatorVisible = false
@@ -423,9 +414,16 @@ private extension GZHTTPConnection {
 class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDelegate{
     
     var sessionConfiguration:NSURLSessionConfiguration?
-    var sessionTask:NSURLSessionTask?
+    
+    var sessionDataTask:NSURLSessionTask?{
+        get{
+            return self.privateCache.sessionTask
+        }
+    }
+    
     var sessionDelegateQueue:NSOperationQueue?
-    var becomeSessionDelegate:Bool = false
+    
+//    var becomeSessionDelegate:Bool = false
 
     var paramsArray:[GZHTTPConnectionValueParam] = []
     
@@ -622,8 +620,8 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
 extension GZHTTPConnectionData {
     
     private struct PrivateCache {
-        
         var session:NSURLSession! = nil
+        var sessionTask:NSURLSessionTask! = nil
         var finalParamsArrayForConnection:[GZHTTPConnectionValueParam] = []
         
     }
