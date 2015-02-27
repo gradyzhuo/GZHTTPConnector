@@ -9,23 +9,21 @@
 import Foundation
 
 
+// MARK : CompleteHandler for client-server connection
+typealias __GZHTTPConnectionCallBackDefaultCompletionHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
+typealias __GZHTTPConnectionCallBackDefaultFailHandler = (response:NSURLResponse!, error:NSError!) -> Void
+
+//MARK: DefaultCompleteHandler
+typealias GZHTTPConnectionCallBackDefaultCompleteHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
+typealias GZHTTPConnectionCallBackDefaultFailHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
+
+//MARK: DefaultCompleteHandler
+typealias GZHTTPConnectionCompleteHandlerCallBackObject = GZHTTPConnectionCallBackDefaultCompleteHandler
 typealias GZHTTPConnectionCompleteHandlerCallBackArray = (array:[AnyObject]!, response:NSURLResponse!, error:NSError!) -> Void
-
 typealias GZHTTPConnectionCompleteHandlerCallBackDictionary = (dictionary:[NSObject:AnyObject]!, response:NSURLResponse!, error:NSError!) -> Void
-
-typealias GZHTTPConnectionCompleteHandlerCallBackObject = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
-
 typealias GZHTTPConnectionCompleteHandlerCallBackBoolean = (success:Bool, response:NSURLResponse!, error:NSError!) -> Void
 
 
-// MARK : CompleteHandler for client-server connection
-
-typealias __GZHTTPConnectionCallBackDefaultCompleteHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
-typealias __GZHTTPConnectionCallBackDefaultFailHandler = (response:NSURLResponse!, error:NSError!) -> Void
-
-
-typealias GZHTTPConnectionCallBackDefaultCompleteHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
-typealias GZHTTPConnectionCallBackDefaultFailHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
 
 
 class GZHTTPConnection:NSObject {
@@ -46,10 +44,10 @@ class GZHTTPConnection:NSObject {
     }()
     
     lazy var backgroundSession:NSURLSession = {
-        var configuration = NSURLSessionConfiguration.backgroundSessionConfiguration("GradyZhuo.GZHTTPConnection.BackgroundMode")
+        var timeStamp = NSDate().timeIntervalSince1970
+        var configuration = NSURLSessionConfiguration.backgroundSessionConfiguration("com.offsky.connection.backgroundMode.\(timeStamp)")
         return NSURLSession(configuration: configuration, delegate: self, delegateQueue: self.delegateQueue)
     }()
-    
     
     override convenience init() {
         self.init(hostURL:NSURL())
@@ -61,40 +59,16 @@ class GZHTTPConnection:NSObject {
         self.hostURL = hostURL
         self.reachability.startNotifier()
         
-//        self.configMintInstance()
-        
     }
     
     // MARK: singleton
     class var defaultConnector : GZHTTPConnection! {
         
-        dispatch_once(&Cache.once_token){
-            Cache.sharedInstance = GZHTTPConnection(hostURL: APPCONFIG_API_BASE_URL)
+        dispatch_once(&ObjectInfo.once_token){
+            ObjectInfo.sharedInstance = GZHTTPConnection(hostURL: APPCONFIG_API_BASE_URL)
         }
         
-        return Cache.sharedInstance!
-    }
-    
-    private struct Cache {
-        static var sharedInstance : GZHTTPConnection?
-        static var once_token : dispatch_once_t = 0
-    }
-    
-    private func startConnecting(){
-        UIApplication.sharedApplication().networkActivityIndicatorVisible = true
-    }
-    
-    private func stopConnecting(){
-        
-        self.session.getTasksWithCompletionHandler { (dataTasks:[AnyObject]!, downloadTasks:[AnyObject]!, uploadTasks:[AnyObject]!) -> Void in
-            
-            if (dataTasks.count + downloadTasks.count + uploadTasks.count) == 0 {
-                UIApplication.sharedApplication().networkActivityIndicatorVisible = false
-            }
-            
-            
-        }
-
+        return ObjectInfo.sharedInstance!
     }
     
     var backgroundSessionCompletionHandler:(()->Void)!
@@ -112,7 +86,7 @@ class GZHTTPConnection:NSObject {
     
     // MARK: default connector 
     
-    func defaultConnectionByDefaultHostURL(api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
+    func defaultConnectionByDefaultHostURL(api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
         
         var APIURL = self.hostURL.URLByAppendingPathComponent(api)
         
@@ -120,7 +94,7 @@ class GZHTTPConnection:NSObject {
         
     }
     
-    func defaultConnection(baseURL:NSURL, api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
+    func defaultConnection(baseURL:NSURL, api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
         
         var APIURL = baseURL.URLByAppendingPathComponent(api)
         
@@ -129,7 +103,7 @@ class GZHTTPConnection:NSObject {
     }
     
     
-    func defaultConnection(#url:NSURL, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
+    func defaultConnection(#url:NSURL, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
         
         var request = NSMutableURLRequest(URL: url)
         
@@ -182,35 +156,10 @@ class GZHTTPConnection:NSObject {
                 
             }
         }
-
-        
-        
-        
-        
-        
-        
-        
-//        if connectorData.inputValueType == GZHTTPConnectionInputValueType.FileUpload {
-//            
-//            var uploadData = connectorData.senderData()
-//            request.setValue("\(uploadData.length)", forHTTPHeaderField: "Content-Length")
-//            
-//            var charset = CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding))
-//            var contentType = "multipart/form-data; charset=\(charset); boundary=\(connectorData.boundary)"
-//            request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-//            
-//            return self.defaultUploadConnection(request: request, connectorData: connectorData, fromData:uploadData, completionHandler: completionHandler, failHandler: failHandler)
-//            
-//        }else{
-//            
-//            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-//            return self.defaultConnection(request: request, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler)
-//        }
-        
         
     }
     
-    func defaultConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask? {
+    func defaultConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask? {
         
         if !self.checkISNetworkReachable(failHandler){
             return nil
@@ -243,7 +192,7 @@ class GZHTTPConnection:NSObject {
     }
     
     
-    func defaultUploadConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData, fromData uploadData:NSData!, completionHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSessionTask?{
+    func defaultUploadConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData, fromData uploadData:NSData!, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSessionTask?{
         
         if !self.checkISNetworkReachable(failHandler){
             return nil
@@ -276,7 +225,7 @@ class GZHTTPConnection:NSObject {
     }
     
     
-    func connectionCompletionHandler(connectorData:GZHTTPConnectionData!, url:NSURL!, data:NSData!, response:NSURLResponse!, connectionError:NSError!, completionHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> Void{
+    func connectionCompletionHandler(connectorData:GZHTTPConnectionData!, url:NSURL!, data:NSData!, response:NSURLResponse!, connectionError:NSError!, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> Void{
         
         self.stopConnecting()
         
@@ -324,12 +273,39 @@ class GZHTTPConnection:NSObject {
         })
 
     }
-    
-    
-    
 
 }
 
+//MARK: connecting operator
+extension GZHTTPConnection{
+
+    internal func startConnecting(){
+        UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+    }
+    
+    internal func stopConnecting(){
+        
+        self.session.getTasksWithCompletionHandler { (dataTasks:[AnyObject]!, downloadTasks:[AnyObject]!, uploadTasks:[AnyObject]!) -> Void in
+            
+            if (dataTasks.count + downloadTasks.count + uploadTasks.count) == 0 {
+                UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+            }
+            
+            
+        }
+        
+    }
+    
+}
+
+extension GZHTTPConnection{
+    
+    private struct ObjectInfo {
+        static var sharedInstance : GZHTTPConnection?
+        static var once_token : dispatch_once_t = 0
+    }
+    
+}
 extension GZHTTPConnection{
     func checkISNetworkReachable(failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> Bool{
         if !self.isNetworkReachable() {
@@ -380,7 +356,6 @@ extension GZHTTPConnection:NSURLSessionTaskDelegate {
 }
 
 //MARK: - Convertor
-
 extension GZHTTPConnection {
     
     func convertToTypeImage(data:NSData!) -> (AnyObject!,NSError!){
@@ -424,55 +399,11 @@ extension GZHTTPConnection {
     
 }
 
-extension NSURL{
-    
-    func parametersDictionary() -> [String:String]{
-        
-        var md:[String:String] = [String:String]()
-        var components:NSURLComponents! = NSURLComponents(URL: self, resolvingAgainstBaseURL: false)
-        
-        if SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO("8.0"){
-            
-            for obj in components.queryItems! {
-                
-                var query = obj as NSURLQueryItem
-                
-                md[query.name] = query.value
-                
-            }
-
-        }else{
-            if let query = components.query {
-                
-                var items = query.componentsSeparatedByString("&")
-                
-                for item in items {
-                    
-                    var queryItem = item.componentsSeparatedByString("=")
-                    
-                    if queryItem.count > 2 || queryItem.count == 0 {
-                        continue
-                    }
-                    
-                    md[queryItem.first! as String] = queryItem.last! as String
-                    
-                }
-            }
-            
-            
-        }
-        
-        
-        return md
-        
-    }
-}
 
 //MARK: - Handle Connection Result
-
-extension GZHTTPConnection {
+private extension GZHTTPConnection {
     
-    func handleResult(callbackHandler:__GZHTTPConnectionCallBackDefaultCompleteHandler, url:NSURL!, obj: AnyObject!, response: NSURLResponse!, error: NSError!){
+    func handleResult(callbackHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, url:NSURL!, obj: AnyObject!, response: NSURLResponse!, error: NSError!){
         
         callbackHandler(obj: obj, response: response, error: error)
         
@@ -482,176 +413,6 @@ extension GZHTTPConnection {
         
         callbackHandler(response: response, error: error)
 
-    }
-    
-}
-
-
-//// MARK: - for Mint
-//extension GZHTTPConnection {
-//    
-//    func configMintInstance(){
-////        self.mintInstance.initAndStartSession(GZKIT_MINT_API_KEY)
-//    }
-//    
-//    func sendMintHandledData(#reason:String, connectionData:GZHTTPConnectionData!, response:NSURLResponse!, error:NSError!, completionBlock:((result:MintLogResult!) -> Void)!){
-//        
-//        if connectionData != nil {
-//
-////            var senderData = connectionData.senderData()
-//            
-//            var extraDataList = Mint.sharedInstance().extraDataList
-//            
-//            if response != nil {
-//                extraDataList.add(ExtraData(key: "URL", andValue: "\(response.URL)"))
-//            }
-//            
-//            for param in connectionData.finalParamsArrayForConnection {
-//                switch param.type {
-//                case .String :
-//                    extraDataList.add(ExtraData(key: param.key, andValue: param.value as String))
-//                case .File:
-//                    var data = param.value as NSData
-//                    extraDataList.add(ExtraData(key: param.key, andValue: data.description ))
-//                }
-//            }
-//            
-//
-//            var exception = NSException(name: "GZKitException", reason: reason, userInfo: error.userInfo)
-//            self.sendMintHandledData(limitedExtraDataList:extraDataList, exception: exception, completionBlock: completionBlock)
-//        }
-//        
-//
-//    }
-//    
-//    func sendMintHandledData(#limitedExtraDataList:LimitedExtraDataList!, exception:NSException, completionBlock:((result:MintLogResult!) -> Void)!){
-//
-//        Mint.sharedInstance().logExceptionAsync(exception, limitedExtraDataList: limitedExtraDataList, completionBlock: completionBlock)
-//    }
-//    
-//
-//    func sendMintHandledDataWithErrorMessage(message:String!, error:NSError){
-//        var exception = NSException(name: "GZKitException", reason: message, userInfo: error.userInfo)
-//        
-//        Mint.sharedInstance().logExceptionAsync(exception, limitedExtraDataList: nil, completionBlock: nil)
-//    }
-//    
-//    func sendMintHandledDataWithErrorData(data:NSData!, error:NSError){
-//        
-//        var limitedExtraData = LimitedExtraDataList()
-//        
-//
-//        
-//    }
-//}
-
-
-//MARK: - GZHTTPConnectionData Enums
-
-enum GZHTTPConnectionDataMethod:String{
-    case POST = "POST"
-    case GET = "GET"
-    case PUT = "PUT"
-    case DELETE = "DELETE"
-}
-
-
-enum GZHTTPConnectionInputValueType{
-    case JSON, KeyValue
-    /** Uploading file and give a 'Boundary'. Params format: .FileUpload( Boundary:String )  */
-    case FileUpload(boundary:String)
-}
-
-enum GZHTTPConnectionOutputValueType:Int{
-    case JSON, Image, HTML, XML, Text, OriginalData
-}
-
-enum GZHTTPConnectionParamType:Int{
-    case File, String
-}
-
-enum GZHTTPConnectionFileContentType:String{
-    case None = "none/none"
-    case All = "application/octet-stream"
-    case JPEG = "image/jpeg"
-    case PNG = "image/png"
-}
-
-class GZHTTPConnectionValueParam{
-    var type:GZHTTPConnectionParamType{
-        return .String
-    }
-    var key:String
-    var value:AnyObject
-    
-    init(key:String, value:AnyObject){
-        
-        self.key = key
-        self.value = value
-        
-    }
-    
-}
-
-
-class GZHTTPConnectionStringValueParam: GZHTTPConnectionValueParam {
-    //Empty
-    
-    init(key:String, stringValue:String){
-        
-        super.init(key: key, value: stringValue)
-    }
-    
-}
-
-class GZHTTPConnectionArrayPartValueParam: GZHTTPConnectionValueParam {
-    //Empty
-    
-    init(key:String, arrayValue:[AnyObject]){
-        super.init(key: key, value: arrayValue)
-    }
-    
-}
-
-class GZHTTPConnectionFileValueParam: GZHTTPConnectionValueParam {
-    
-    override var type:GZHTTPConnectionParamType{
-        return .File
-    }
-    
-    var filenmae = "Default"
-    var contentType:GZHTTPConnectionFileContentType = .All
-    
-    init(key: String, fileData: NSData) {
-        super.init(key: key, value: fileData)
-        
-    }
-    
-    convenience init(filename:String, key: String, fileData: NSData) {
-        self.init(contentType:.All, filename:filename, key: key, fileData: fileData)
-    }
-    
-    convenience init(contentType:GZHTTPConnectionFileContentType, filename:String, key: String, fileData: NSData) {
-        self.init(key: key, fileData: fileData)
-        
-        self.filenmae = filename
-        self.contentType = contentType
-        
-    }
-    
-}
-
-class GZHTTPConnectionImageDataValueParam: GZHTTPConnectionFileValueParam {
-    
-    override var type:GZHTTPConnectionParamType{
-        return .File
-    }
-    
-    override init(key: String, fileData: NSData) {
-        super.init(key: key, fileData: fileData)
-        
-        self.contentType = .JPEG
-        
     }
     
 }
@@ -867,73 +628,11 @@ extension GZHTTPConnectionData {
         
     }
     
-}
-
-//MARK: - add params
-extension GZHTTPConnectionData {
     
-    func addParam(param:GZHTTPConnectionValueParam){
-        self.paramsArray.append(param)
-    }
-    
-    func addParam(#key:String, boolValue value:Bool?){
-        var defaultValue = false
-        
-        self.addParam(key: key, intValue: Int(value ?? defaultValue))
-    }
-    
-    func addParam(#key:String, intValue value:Int?){
-        var defaultValue = 0
-        var stringValue = "\(value ?? defaultValue)"
-        self.addParam(key: key, stringValue: stringValue)
-    }
-    
-    func addParam(#key:String, stringValue value:String?){
-        var defaultValue = ""
-        self.addParam(GZHTTPConnectionStringValueParam(key: key, stringValue: value ?? defaultValue))
-    }
-    
-    func addParam(#key:String, stringValueFromArray value:[AnyObject]?, componentsJoinedByString separator:String = ","){
-        var defaultValue:[AnyObject] = []
-        var stringValue = (value ?? defaultValue).combine(separator)
-        self.addParam(key: key, stringValue: stringValue)
-    }
-    
-    func addParam(#key:String, fileData value:NSData?, contentType:GZHTTPConnectionFileContentType, filename:String){
-        var defaultValue = NSData()
-        self.addParam(GZHTTPConnectionImageDataValueParam(contentType: contentType, filename: filename, key: key, fileData: value ?? defaultValue))
-    }
-    
-    func addAnyFileDataValueParam(#key:String, fileData value:NSData?, filename:String){
-        self.addParam(key: key, fileData: value, contentType: .All, filename: filename)
-    }
-    
-    func addJPEGImageDataValueParam(#key:String, fileData value:NSData?, filename:String){
-        self.addParam(key: key, fileData: value, contentType: .JPEG, filename: filename)
-    }
-    
-    func addJPEGImageDataValueParam(#key:String, image:UIImage!, filename:String, compressionQuality:CGFloat){
-        
-        var data = UIImageJPEGRepresentation(image, compressionQuality)
-        self.addJPEGImageDataValueParam(key: key, fileData: data, filename: filename)
-        
-    }
-    
-    func addPNGImageDataValueParam(#key:String, fileData value:NSData?, filename:String){
-        self.addParam(key: key, fileData: value, contentType: .PNG, filename: filename)
-    }
-    
-    func addPNGImageDataValueParam(#key:String, image:UIImage!, filename:String){
-        
-        var data = UIImagePNGRepresentation(image)
-        self.addPNGImageDataValueParam(key: key, fileData: data, filename: filename)
-        
-    }
     
 }
 
-
-//MARK: - remove param
+//MARK: - remove Final param
 extension GZHTTPConnectionData {
     
     private func removeFinalParam(forKey key:String){
@@ -944,12 +643,6 @@ extension GZHTTPConnectionData {
         self.removeFinalParam(forKey: param.key)
     }
     
-    func removeParam(forKey key:String){
-        self.paramsArray = self.paramsArray.filter{ return $0.key != key }
-    }
-    
-    func removeParam(param:GZHTTPConnectionValueParam){
-        self.removeParam(forKey: param.key)
-    }
-    
 }
+
+
