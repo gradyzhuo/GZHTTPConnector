@@ -15,13 +15,13 @@ typealias __GZHTTPConnectionCallBackDefaultCompletionHandler = (obj:AnyObject!, 
 typealias __GZHTTPConnectionCallBackDefaultFailHandler = (response:NSURLResponse!, error:NSError!) -> Void
 
 //MARK: DefaultCompleteHandler
-typealias GZHTTPConnectionCallBackDefaultCompleteHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
-typealias GZHTTPConnectionCallBackDefaultFailHandler = (obj:AnyObject!, response:NSURLResponse!, error:NSError!) -> Void
+typealias GZHTTPConnectionCallBackDefaultCompleteHandler = (obj:AnyObject, response:NSURLResponse!, error:NSError!) -> Void
+typealias GZHTTPConnectionCallBackDefaultFailHandler = __GZHTTPConnectionCallBackDefaultCompletionHandler
 
 //MARK: DefaultCompleteHandler
 typealias GZHTTPConnectionCompleteHandlerCallBackObject = GZHTTPConnectionCallBackDefaultCompleteHandler
-typealias GZHTTPConnectionCompleteHandlerCallBackArray = (array:[AnyObject]!, response:NSURLResponse!, error:NSError!) -> Void
-typealias GZHTTPConnectionCompleteHandlerCallBackDictionary = (dictionary:[NSObject:AnyObject]!, response:NSURLResponse!, error:NSError!) -> Void
+typealias GZHTTPConnectionCompleteHandlerCallBackArray = (array:[AnyObject], response:NSURLResponse!, error:NSError!) -> Void
+typealias GZHTTPConnectionCompleteHandlerCallBackDictionary = (dictionary:[NSObject:AnyObject], response:NSURLResponse!, error:NSError!) -> Void
 typealias GZHTTPConnectionCompleteHandlerCallBackBoolean = (success:Bool, response:NSURLResponse!, error:NSError!) -> Void
 
 
@@ -467,6 +467,7 @@ private extension GZHTTPConnection {
     
     func handleError(callbackHandler:__GZHTTPConnectionCallBackDefaultFailHandler, url:NSURL!, connectionData:GZHTTPConnectionData, response: NSURLResponse!, error: NSError!){
         
+        println("[GZHTTPConnection Error]:\(error.localizedDescription) <url:\(url), connectionData:\(connectionData.senderString())>")
         callbackHandler(response: response, error: error)
 
     }
