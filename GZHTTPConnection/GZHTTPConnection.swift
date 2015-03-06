@@ -25,8 +25,6 @@ typealias GZHTTPConnectionCompleteHandlerCallBackDictionary = (dictionary:[NSObj
 typealias GZHTTPConnectionCompleteHandlerCallBackBoolean = (success:Bool, response:NSURLResponse!, error:NSError!) -> Void
 
 
-
-
 class GZHTTPConnection:NSObject {
     
     private var privateObjectInfo:ObjectInfo = ObjectInfo()
@@ -82,7 +80,7 @@ extension GZHTTPConnection{
             return self.defaultConnection(hostURL, api: api, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler)
         }
         
-        println("Error! Connection is not running, cuase connection's hostURL is nil, please check your accessed value.")
+        fatalError("Error! Connection is not running, cuase connection's hostURL is nil, please check your accessed value.")
         
         return nil
         
@@ -388,7 +386,6 @@ extension GZHTTPConnection:NSURLSessionDelegate {
         self.privateObjectInfo.backgroundSessionCompletionHandler = nil
         
         completionHandler()
-        
         
     }
     
