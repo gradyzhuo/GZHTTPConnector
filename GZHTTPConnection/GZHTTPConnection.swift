@@ -526,16 +526,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
 //    var boundary:String = ""
     
     private var privateObjectInfo = ObjectInfo()
-    
-    class func reuseData<T where T:GZHTTPConnectionData>()->T{
-        
-        dispatch_once(&ObjectInfo.once, { () -> Void in
-            ObjectInfo.singleton = GYFlingsOfTimelineConnectionData()
-        })
-        
-        return ObjectInfo.singleton as T
-    }
-    
+
     
     func prepare(){
         
@@ -699,9 +690,6 @@ extension GZHTTPConnectionData {
         var session:NSURLSession! = nil
         var sessionTask:NSURLSessionTask! = nil
         var finalParamsArrayForConnection:[GZHTTPConnectionValueParam] = []
-        
-        static var once : dispatch_once_t = 0
-        static var singleton : AnyObject!
         
     }
     
