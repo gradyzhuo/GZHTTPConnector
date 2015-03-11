@@ -251,15 +251,11 @@ extension GZHTTPConnection{
         
         
         
-        dispatch_async(dispatch_get_main_queue(), { () -> Void in
-            
-            if anyError != nil {
-                self.handleError(failHandler, url:url, connectionData: connectorData, response: response, error: anyError)
-            }else{
-                self.handleResult(completionHandler, url:url, obj: resultObject, response: response, error: anyError)
-            }
-            
-        })
+        if anyError != nil {
+            self.handleError(failHandler, url:url, connectionData: connectorData, response: response, error: anyError)
+        }else{
+            self.handleResult(completionHandler, url:url, obj: resultObject, response: response, error: anyError)
+        }
         
     }
 
@@ -513,7 +509,6 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
             return GZHTTPConnectionOutputValueType.JSON
         }
     }
-    
     
     var timeoutInterval:NSTimeInterval = 30
     
