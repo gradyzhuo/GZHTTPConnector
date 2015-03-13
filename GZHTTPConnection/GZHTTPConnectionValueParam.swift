@@ -18,7 +18,7 @@ class GZHTTPConnectionValueParam{
     init(key:String, value:AnyObject){
         
         self.key = key
-        self.value = value
+        self.value = value as AnyObject
         
     }
     
@@ -34,14 +34,14 @@ class GZHTTPConnectionStringValueParam: GZHTTPConnectionValueParam {
     
 }
 
-class GZHTTPConnectionArrayPartValueParam: GZHTTPConnectionValueParam {
-    //Empty
-    
-    init(key:String, arrayValue:[AnyObject]){
-        super.init(key: key, value: arrayValue)
-    }
-    
-}
+//class GZHTTPConnectionArrayPartValueParam: GZHTTPConnectionValueParam {
+//    //Empty
+//    
+//    init(key:String, arrayValue:[AnyObject]){
+//        super.init(key: key, value: arrayValue)
+//    }
+//    
+//}
 
 class GZHTTPConnectionFileValueParam: GZHTTPConnectionValueParam {
     
@@ -90,13 +90,12 @@ class GZHTTPConnectionImageDataValueParam: GZHTTPConnectionFileValueParam {
 //MARK: - add params
 extension GZHTTPConnectionData {
     
-    private func addParam(param:GZHTTPConnectionValueParam){
+    func addParam(param:GZHTTPConnectionValueParam){
         self.paramsArray.append(param)
     }
     
     func addParam(#key:String, boolValue value:Bool?)->GZHTTPConnectionValueParam{
         var defaultValue = false
-        
         return self.addParam(key: key, intValue: Int(value ?? defaultValue))
     }
     
@@ -114,10 +113,7 @@ extension GZHTTPConnectionData {
     }
     
     func addParam(#key:String, stringValueFromArray value:[AnyObject]?, componentsJoinedByString separator:String = ",")->GZHTTPConnectionValueParam{
-        var defaultValue:[AnyObject] = []
-        var stringValue = (value ?? defaultValue).combine(separator)
-        return self.addParam(key: key, stringValue: stringValue)
-        
+        return self <- key <& (value ?? []) <% separator
     }
     
     //MARK: - file handler
@@ -170,3 +166,4 @@ extension GZHTTPConnectionData {
     }
     
 }
+
