@@ -8,8 +8,8 @@
 
 import Foundation
 
-protocol GZHTTPConnectionParamValueType{}
-protocol GZHTTPConnectionParamBasicType:GZHTTPConnectionParamValueType{}
+public protocol GZHTTPConnectionParamValueType{}
+public protocol GZHTTPConnectionParamBasicType:GZHTTPConnectionParamValueType{}
 
 extension Int : GZHTTPConnectionParamBasicType {}
 extension Bool : GZHTTPConnectionParamBasicType {}
@@ -17,8 +17,6 @@ extension String : GZHTTPConnectionParamBasicType {}
 
 extension NSData : GZHTTPConnectionParamValueType {}
 extension UIImage : GZHTTPConnectionParamValueType {}
-
-//infix operator ++ {}
 
 
 infix operator <- { precedence 50 }
@@ -61,19 +59,20 @@ func <&(key:String, getValue:@autoclosure ()->GZHTTPConnectionParamBasicType)(co
 
 }
 
-func + (left:GZHTTPConnectionData, right:GZHTTPConnectionValueParam)->GZHTTPConnectionData{
-    left.addParam(right)
-    return left
+func <- (connectionData:GZHTTPConnectionData, right:(key:GZHTTPConnectionData)->GZHTTPConnectionValueParam)->GZHTTPConnectionValueParam{
+    return right(key:connectionData)
 }
+
+//MARK: - operator '+' 
+
+/** now can add GZHTTPConnectionValueParam to GZHTTPConnectionData by syntax [GZHTTPConnectionData] + [GZHTTPConnectionValueParam] */
+
 
 func + (left:GZHTTPConnectionData, right:GZHTTPConnectionValueParam)->GZHTTPConnectionValueParam{
     left.addParam(right)
     return right
 }
-
-func <- (connectionData:GZHTTPConnectionData, right:(key:GZHTTPConnectionData)->GZHTTPConnectionValueParam)->GZHTTPConnectionValueParam{
-    return right(key:connectionData)
-}
-
-
-
+//
+//func + (left:GZHTTPConnectionData, right:()->GZHTTPConnectionValueParam){
+//    left.addParam(right())
+//}
