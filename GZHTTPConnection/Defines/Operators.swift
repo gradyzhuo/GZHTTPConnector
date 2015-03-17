@@ -1,5 +1,5 @@
 //
-//  Operators.swift
+//!  Operators.swift
 //  Flingy
 //
 //  Created by Grady Zhuo on 3/13/15.
@@ -18,15 +18,13 @@ extension String : GZHTTPConnectionParamBasicType {}
 extension NSData : GZHTTPConnectionParamValueType {}
 extension UIImage : GZHTTPConnectionParamValueType {}
 
-//infix operator ++ {}
+
+//infix operator + { precedence 50 }
+//infix operator & { precedence 60 }
+infix operator << { precedence 160 }
 
 
-infix operator <- { precedence 50 }
-infix operator <& { precedence 60 }
-infix operator <% { precedence 70 }
-
-
-func <%(value:[AnyObject], separator:String)->String{
+func <<(value:[AnyObject], separator:String)->String{
     
     var str : String = ""
     for (idx, item) in enumerate(value) {
@@ -40,12 +38,12 @@ func <%(value:[AnyObject], separator:String)->String{
 }
 
 
-func <&(key:String, getValue: ()->String)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
+func &(key:String, getValue: ()->String)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
     return connectionData.addParam(key: key, stringValue: getValue())
 }
 
-func <&(key:String, getValue:@autoclosure ()->GZHTTPConnectionParamBasicType)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
-
+func &(key:String, getValue: @autoclosure ()->GZHTTPConnectionParamBasicType)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
+    
     var value = getValue()
     
     switch value {
@@ -58,22 +56,39 @@ func <&(key:String, getValue:@autoclosure ()->GZHTTPConnectionParamBasicType)(co
     default:
         return connectionData.addParam(key: key, stringValue: "\(value)")
     }
-
+    
 }
+
+func += (connectionData:GZHTTPConnectionData, right:(key:GZHTTPConnectionData)->GZHTTPConnectionValueParam)->GZHTTPConnectionValueParam{
+    return right(key:connectionData)
+}
+
+func + (connectionData:GZHTTPConnectionData, right:[String:GZHTTPConnectionParamBasicType]){
+    
+    for keyValue in right{
+        connectionData + keyValue
+    }
+    
+}
+
+func + (connectionData:GZHTTPConnectionData, right:(String, GZHTTPConnectionParamBasicType)){
+    let (key, value) = right
+    connectionData += key & value
+}
+
+
+//MARK: - operator '+'
+
+//! now can add GZHTTPConnectionValueParam to GZHTTPConnectionData by syntax [GZHTTPConnectionData] + [GZHTTPConnectionValueParam]
 
 func + (left:GZHTTPConnectionData, right:GZHTTPConnectionValueParam)->GZHTTPConnectionData{
     left.addParam(right)
     return left
 }
 
-func + (left:GZHTTPConnectionData, right:GZHTTPConnectionValueParam)->GZHTTPConnectionValueParam{
-    left.addParam(right)
-    return right
-}
-
-func <- (connectionData:GZHTTPConnectionData, right:(key:GZHTTPConnectionData)->GZHTTPConnectionValueParam)->GZHTTPConnectionValueParam{
-    return right(key:connectionData)
-}
 
 
 
+//public func + (left:GZHTTPConnectionData, right:GZHTTPConnectionValueParam)->Void{
+//    left.addParam(right)
+//}

@@ -113,7 +113,7 @@ extension GZHTTPConnectionData {
     }
     
     func addParam(#key:String, stringValueFromArray value:[AnyObject]?, componentsJoinedByString separator:String = ",")->GZHTTPConnectionValueParam{
-        return self <- key <& (value ?? []) <% separator
+        return self += key & (value ?? []) << separator
     }
     
     //MARK: - file handler
