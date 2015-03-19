@@ -191,6 +191,8 @@ extension GZHTTPConnection{
     
     private func __prepareConnectionSession(#request:NSURLRequest, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSession!{
         
+        connectorData.paramsArray.removeAll(keepCapacity: false)
+        
         if !self.checkISNetworkReachable(failHandler){
             return nil
         }
