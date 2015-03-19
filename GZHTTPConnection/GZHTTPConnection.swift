@@ -191,7 +191,7 @@ extension GZHTTPConnection{
     
     private func __prepareConnectionSession(#request:NSURLRequest, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSession!{
         
-        connectorData.paramsArray.removeAll(keepCapacity: false)
+        connectorData.resetAllParams()
         
         if !self.checkISNetworkReachable(failHandler){
             return nil
@@ -524,6 +524,13 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     
     private var privateObjectInfo = ObjectInfo()
 
+    
+    func resetAllParams(){
+        
+        self.paramsArray.removeAll(keepCapacity: false)
+        self.privateObjectInfo.finalParamsArrayForConnection.removeAll(keepCapacity: false)
+        
+    }
     
     func prepare(){
         
