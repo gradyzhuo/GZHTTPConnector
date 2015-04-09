@@ -42,7 +42,7 @@ func &(key:String, getValue: ()->String)(connectionData:GZHTTPConnectionData)->G
     return connectionData.addParam(key: key, stringValue: getValue())
 }
 
-func &(key:String, getValue: @autoclosure ()->GZHTTPConnectionParamBasicType)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
+func &(key:String, @autoclosure getValue: ()->GZHTTPConnectionParamBasicType)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
     
     var value = getValue()
     

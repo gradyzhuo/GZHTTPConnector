@@ -20,7 +20,7 @@ extension NSURL{
             
             for obj in components.queryItems! {
                 
-                var query = obj as NSURLQueryItem
+                var query = obj as! NSURLQueryItem
                 
                 md[query.name] = query.value
                 

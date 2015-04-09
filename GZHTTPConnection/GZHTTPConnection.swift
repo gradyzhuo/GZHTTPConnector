@@ -82,8 +82,6 @@ extension GZHTTPConnection{
         
         fatalError("Error! Connection is not running, cuase connection's hostURL is nil, please check your accessed value.")
         
-        return nil
-        
     }
     
     func defaultConnection(baseURL:NSURL, api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
@@ -639,11 +637,11 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
                 data.appendData("\(param.value)\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
                 
             case .File:
-                var fileparam = param as GZHTTPConnectionFileValueParam
+                var fileparam = param as! GZHTTPConnectionFileValueParam
                 
                 data.appendData("Content-Disposition: form-data; name=\"\(param.key)\"; filename=\"\(fileparam.filenmae)\"\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
                 data.appendData("Content-Type: \(fileparam.contentType.rawValue)\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
-                data.appendData(fileparam.value as NSData)
+                data.appendData(fileparam.value as! NSData)
                 data.appendData("\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
                 
                 
