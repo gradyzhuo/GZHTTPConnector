@@ -29,7 +29,7 @@ class GZHTTPConnection:NSObject {
     
     private var privateObjectInfo:ObjectInfo = ObjectInfo()
     
-    let reachability:Reachability = Reachability.reachabilityForInternetConnection()
+    static let reachability:Reachability = Reachability.reachabilityForInternetConnection()
     
     var hostURL:NSURL?
     
@@ -50,7 +50,7 @@ class GZHTTPConnection:NSObject {
         super.init()
         
         self.hostURL = hostURL
-        self.reachability.startNotifier()
+        GZHTTPConnection.reachability.startNotifier()
         self.privateObjectInfo.session = NSURLSession.sharedSession()
     }
     
@@ -149,22 +149,25 @@ extension GZHTTPConnection{
         
     }
     
-    func defaultConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask? {
+    func defaultConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask {
         
-        var dataTask:NSURLSessionTask? = nil
+        let dataTask:NSURLSessionTask
+        let urlSession:NSURLSession
         
         if let session = self.__prepareConnectionSession(request: request, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler) {
             
-            dataTask = session.dataTaskWithRequest(request, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
-                self.connectionCompletionHandler(connectorData, url:request.URL, data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
-            })
+            urlSession = session
             
-            connectorData.privateObjectInfo.sessionTask = dataTask
-            connectorData.privateObjectInfo.session = session
-            
+        }else{
+            urlSession = NSURLSession.sharedSession()
         }
         
+        dataTask = urlSession.dataTaskWithRequest(request, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
+            self.connectionCompletionHandler(connectorData, url:request.URL, data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
+        })
         
+        connectorData.privateObjectInfo.sessionTask = dataTask
+        connectorData.privateObjectInfo.session = session
         
         return dataTask
     }
@@ -360,12 +363,12 @@ extension GZHTTPConnection{
 //MARK: - Network Reachable Checker
 extension GZHTTPConnection{
     
-    func isNetworkReachable() -> Bool {
-        return self.reachability.currentReachabilityStatus() != NetworkStatus.NotReachable
+    class func isNetworkReachable() -> Bool {
+        return GZHTTPConnection.reachability.currentReachabilityStatus() != NetworkStatus.NotReachable
     }
     
     func checkISNetworkReachable(failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> Bool{
-        if !self.isNetworkReachable() {
+        if !GZHTTPConnection.isNetworkReachable() {
             GZDebugLog("[connection error] there's no network reachable")
             
             var error = NSError(domain: "Network", code: 0, userInfo: ["reason":"no network reachable"])
@@ -531,7 +534,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
 
     
     func prepare(){
-        
+        self.privateObjectInfo.finalParamsArrayForConnection.removeAll(keepCapacity: false)
     }
     
     func willConvertToSenderData(){
@@ -558,6 +561,11 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
 
         for connectorData in connectorDatas {
             connectorData.willConvertToSenderData()
+            if self.removeDuplicatedKeysInDependedDatas {
+                for param in connectorData.paramsArray {
+                    self.removeFinalParam(param)
+                }
+            }
             self.privateObjectInfo.finalParamsArrayForConnection += connectorData.paramsArray
             self.recusiveDependedConnectorDatas(connectorData.dependedConnectorDatas)
         }
