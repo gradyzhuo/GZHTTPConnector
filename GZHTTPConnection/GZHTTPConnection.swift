@@ -502,23 +502,11 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         return self.privateObjectInfo.finalParamsArrayForConnection
     }
     
-    var HTTPMethod:GZHTTPConnectionDataMethod{
-        get{
-            return GZHTTPConnectionDataMethod.GET
-        }
-    }
+    var HTTPMethod:GZHTTPConnectionDataMethod = .GET
     
-    var inputValueType:GZHTTPConnectionInputValueType{
-        get{
-            return GZHTTPConnectionInputValueType.KeyValue
-        }
-    }
+    var inputValueType:GZHTTPConnectionInputValueType = .KeyValue
     
-    var outputValueType:GZHTTPConnectionOutputValueType{
-        get{
-            return GZHTTPConnectionOutputValueType.JSON
-        }
-    }
+    var outputValueType:GZHTTPConnectionOutputValueType = .JSON
     
     var timeoutInterval:NSTimeInterval = 30
     
