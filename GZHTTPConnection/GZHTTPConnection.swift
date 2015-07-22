@@ -583,9 +583,13 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         
         var stringConnector = ""
         
+        let chars = NSCharacterSet.URLPathAllowedCharacterSet().mutableCopy().invertedSet as! NSMutableCharacterSet
+        chars.addCharactersInString("+")
+        chars.invert()
+        
         for param in self.finalParams {
-            
-            var keyValueString = "\(param.key)=\(param.value)"
+            let encodedValue = param.value.stringByAddingPercentEncodingWithAllowedCharacters(chars) ?? ""
+            var keyValueString = "\(param.key)=\(encodedValue)"
             
             resultData.appendData("\(stringConnector)\(keyValueString)".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
             
@@ -620,6 +624,10 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
             fileBoundary = "-----\(NSDate().timeIntervalSince1970)"
         }
         
+        let chars = NSCharacterSet.URLPathAllowedCharacterSet().mutableCopy().invertedSet as! NSMutableCharacterSet
+        chars.addCharactersInString("+")
+        chars.invert()
+        
         for param in self.finalParams {
             data.appendData("--\(fileBoundary)\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
             
@@ -628,9 +636,10 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
             case .String:
                 
                 GZDebugLog("getFileUploadData key:\(param.key), value:\(param.value)")
+                let encodedValue = param.value.stringByAddingPercentEncodingWithAllowedCharacters(chars) ?? ""
                 
                 data.appendData("Content-Disposition: form-data; name=\"\(param.key)\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false) ?? NSData())
-                data.appendData("\(param.value)\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
+                data.appendData("\(encodedValue)\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
                 
             case .File:
                 var fileparam = param as! GZHTTPConnectionFileValueParam
