@@ -18,13 +18,11 @@ extension NSURL{
         
         if SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO("8.0"){
             
-            for obj in components.queryItems! {
-                
-                var query = obj as! NSURLQueryItem
-                
-                md[query.name] = query.value
-                
-            }
+            md = components.queryItems?.reduce(md, combine: { (var dict, item) -> [String:String] in
+                var query = item as! NSURLQueryItem
+                dict[query.name] = query.value
+                return dict
+            }) ?? [:]
             
         }else{
             if let query = components.query {
