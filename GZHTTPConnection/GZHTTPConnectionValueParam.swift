@@ -6,7 +6,7 @@
 //  Copyright (c) 2015 Grady Zhuo. All rights reserved.
 //
 
-import Foundation
+import UIKit
 
 class GZHTTPConnectionValueParam{
     var type:GZHTTPConnectionParamType{

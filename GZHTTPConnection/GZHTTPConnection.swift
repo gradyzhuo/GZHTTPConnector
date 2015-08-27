@@ -7,6 +7,8 @@
 //
 
 import Foundation
+import UIKit
+import Reachability
 
 let GZHTTPConnectionHostURLInfoKey:String = "GZHTTPConnectionHostURL"
 
