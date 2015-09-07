@@ -44,7 +44,7 @@ class GZHTTPConnection:NSObject {
 //    }()
     
     override convenience init() {
-        var hostURL = GZHTTPConnection.hostURLFromInfoDictionary()
+        let hostURL = GZHTTPConnection.hostURLFromInfoDictionary()
         self.init(hostURL:hostURL)
     }
     
@@ -65,7 +65,7 @@ class GZHTTPConnection:NSObject {
     
     convenience init(hostURL:NSURL, sessionConfiguration configuration: NSURLSessionConfiguration?, sessionDelegate delegate:NSURLSessionDelegate?, delegateQueue queue:NSOperationQueue?){
         
-        var session = NSURLSession(configuration: configuration, delegate: delegate, delegateQueue: queue)
+        let session = NSURLSession(configuration: configuration!, delegate: delegate, delegateQueue: queue)
         self.init(hostURL:hostURL, session:session)
         
     }
@@ -88,16 +88,16 @@ extension GZHTTPConnection{
     
     func defaultConnection(baseURL:NSURL, api:String, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
         
-        var APIURL = baseURL.URLByAppendingPathComponent(api)
+        let APIURL = baseURL.URLByAppendingPathComponent(api)
         
         return self.defaultConnection(url: APIURL, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler)
         
     }
     
     
-    func defaultConnection(#url:NSURL, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
+    func defaultConnection(url url:NSURL, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)-> NSURLSessionTask?{
         
-        var request = NSMutableURLRequest(URL: url)
+        let request = NSMutableURLRequest(URL: url)
         
         connectorData.prepare()
         connectorData.recusiveDependedConnectorDatas()
@@ -112,9 +112,9 @@ extension GZHTTPConnection{
             
         case .GET :
             
-            var URLComponents:NSURLComponents! = NSURLComponents(URL: url, resolvingAgainstBaseURL: false)
+            let URLComponents:NSURLComponents! = NSURLComponents(URL: url, resolvingAgainstBaseURL: false)
             
-            var senderString = connectorData.senderString()
+            let senderString = connectorData.senderString()
             
             if senderString != "" {
                 URLComponents.query = senderString
@@ -131,11 +131,11 @@ extension GZHTTPConnection{
             
             switch connectorData.inputValueType {
             case let .FileUpload(boundary):
-                var uploadData = connectorData.senderData()
+                let uploadData = connectorData.senderData()
                 request.setValue("\(uploadData.length)", forHTTPHeaderField: "Content-Length")
                 
-                var charset = CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding))
-                var contentType = "multipart/form-data; charset=\(charset); boundary=\(boundary)"
+                let charset = CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding))
+                let contentType = "multipart/form-data; charset=\(charset); boundary=\(boundary)"
                 request.setValue(contentType, forHTTPHeaderField: "Content-Type")
                 
                 return self.defaultUploadConnection(request: request, connectorData: connectorData, fromData:uploadData, completionHandler: completionHandler, failHandler: failHandler)
@@ -151,7 +151,7 @@ extension GZHTTPConnection{
         
     }
     
-    func defaultConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask {
+    func defaultConnection(request request:NSURLRequest, connectorData:GZHTTPConnectionData , completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler) -> NSURLSessionTask {
         
         let dataTask:NSURLSessionTask
         let urlSession:NSURLSession
@@ -164,7 +164,7 @@ extension GZHTTPConnection{
             urlSession = NSURLSession.sharedSession()
         }
         
-        dataTask = urlSession.dataTaskWithRequest(request, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
+        dataTask = urlSession.dataTaskWithRequest(request, completionHandler: { (data:NSData?, response:NSURLResponse?, error:NSError?) -> Void in
             self.connectionCompletionHandler(connectorData, url:request.URL, data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
         })
         
@@ -175,13 +175,13 @@ extension GZHTTPConnection{
     }
     
     
-    func defaultUploadConnection(#request:NSURLRequest, connectorData:GZHTTPConnectionData, fromData uploadData:NSData!, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSessionTask?{
+    func defaultUploadConnection(request request:NSURLRequest, connectorData:GZHTTPConnectionData, fromData uploadData:NSData!, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSessionTask?{
         
         var dataTask:NSURLSessionTask? = nil
         
         if let session = self.__prepareConnectionSession(request: request, connectorData: connectorData, completionHandler: completionHandler, failHandler: failHandler) {
             
-            dataTask = session.uploadTaskWithRequest(request, fromData:uploadData, completionHandler: { (data:NSData!, response:NSURLResponse!, error:NSError!) -> Void in
+            dataTask = session.uploadTaskWithRequest(request, fromData:uploadData, completionHandler: { (data:NSData?, response:NSURLResponse?, error:NSError?) -> Void in
                 self.connectionCompletionHandler(connectorData, url:request.URL ,data: data, response: response, connectionError: error, completionHandler: completionHandler, failHandler: failHandler)
             })
             
@@ -199,7 +199,7 @@ extension GZHTTPConnection{
 //MARK: - Prepare / Completion Handler
 extension GZHTTPConnection{
     
-    private func __prepareConnectionSession(#request:NSURLRequest, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSession!{
+    private func __prepareConnectionSession(request request:NSURLRequest, connectorData:GZHTTPConnectionData, completionHandler:__GZHTTPConnectionCallBackDefaultCompletionHandler, failHandler:__GZHTTPConnectionCallBackDefaultFailHandler)->NSURLSession!{
         
         connectorData.paramsArray.removeAll(keepCapacity: false)
         
@@ -209,7 +209,7 @@ extension GZHTTPConnection{
         
         self.didStartConnecting()
         
-        var session = self.session ?? NSURLSession.sharedSession()
+        let session = self.session ?? NSURLSession.sharedSession()
         session.configuration.allowsCellularAccess = true
         
 //        if session == nil {
@@ -303,7 +303,7 @@ extension GZHTTPConnection{
     
     class func hostURLFromInfoDictionary()->NSURL? {
         
-        var urlStr = NSBundle.mainBundle().infoDictionary?[GZHTTPConnectionHostURLInfoKey] as? String ?? ""
+        let urlStr = NSBundle.mainBundle().infoDictionary?[GZHTTPConnectionHostURLInfoKey] as? String ?? ""
         return NSURL(string: urlStr)
     }
     
@@ -349,10 +349,15 @@ extension GZHTTPConnection{
 //MARK: - Background Support
 extension GZHTTPConnection{
     
-    var backgroundSessionCompletionHandler:(()->Void){
+    var backgroundSessionCompletionHandler:( ()->Void){
         
-        var defaultHandler = self.defaultBackgroundSessionCompletionHandler
-        return (self.privateObjectInfo.backgroundSessionCompletionHandler) ?? defaultHandler
+        let defaultHandler = self.defaultBackgroundSessionCompletionHandler
+        
+        if self.privateObjectInfo.backgroundSessionCompletionHandler == nil {
+            self.privateObjectInfo.backgroundSessionCompletionHandler = defaultHandler
+        }
+        
+        return self.privateObjectInfo.backgroundSessionCompletionHandler!
         
     }
     
@@ -373,7 +378,7 @@ extension GZHTTPConnection{
         if !GZHTTPConnection.isNetworkReachable() {
             GZDebugLog("[connection error] there's no network reachable")
             
-            var error = NSError(domain: "Network", code: 0, userInfo: ["reason":"no network reachable"])
+            let error = NSError(domain: "Network", code: 0, userInfo: ["reason":"no network reachable"])
             
             failHandler(response:  nil, error: error)
             return false
@@ -390,7 +395,7 @@ extension GZHTTPConnection:NSURLSessionDelegate {
         
         GZDebugLog("URLSessionDidFinishEventsForBackgroundURLSession")
         
-        var completionHandler = self.backgroundSessionCompletionHandler
+        let completionHandler = self.backgroundSessionCompletionHandler
         self.privateObjectInfo.backgroundSessionCompletionHandler = nil
         
         completionHandler()
@@ -401,7 +406,7 @@ extension GZHTTPConnection:NSURLSessionDelegate {
         
     }
     
-    func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential!) -> Void) {
+    func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void) {
         
     }
 }
@@ -421,7 +426,7 @@ extension GZHTTPConnection {
     
     func convertToTypeImage(data:NSData!) -> (AnyObject!,NSError!){
         
-        var image = UIImage(data: data)
+        let image = UIImage(data: data)
         
         return (image, nil)
     }
@@ -430,7 +435,13 @@ extension GZHTTPConnection {
     func convertToJSON(data:NSData!) -> (AnyObject!,NSError!){
         
         var jsonError:NSError?
-        var jsonObject: AnyObject? = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.MutableLeaves, error: &jsonError)
+        var jsonObject: AnyObject?
+        do {
+            jsonObject = try NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.MutableLeaves)
+        } catch let error as NSError {
+            jsonError = error
+            jsonObject = nil
+        }
         
         if jsonError != nil {
             
@@ -444,7 +455,7 @@ extension GZHTTPConnection {
                 userInfo[NSRecoveryAttempterErrorKey] = data
             }
             
-            var error = NSError(domain: jsonError!.domain, code: jsonError!.code, userInfo: userInfo)
+            let error = NSError(domain: jsonError!.domain, code: jsonError!.code, userInfo: userInfo)
             
 //            self.sendMintHandledDataWithErrorMessage
             
@@ -472,7 +483,7 @@ private extension GZHTTPConnection {
     
     func handleError(callbackHandler:__GZHTTPConnectionCallBackDefaultFailHandler, url:NSURL!, connectionData:GZHTTPConnectionData, response: NSURLResponse!, error: NSError!){
         
-        println("[GZHTTPConnection Error]:\(error.localizedDescription) <url:\(url), connectionData:\(connectionData.senderString())>")
+        print("[GZHTTPConnection Error]:\(error.localizedDescription) <url:\(url), connectionData:\(connectionData.senderString())>")
         callbackHandler(response: response, error: error)
 
     }
@@ -570,7 +581,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         
         for param in self.finalParams {
             
-            var keyValueString = "\(param.key)=\(param.value)"
+            let keyValueString = "\(param.key)=\(param.value)"
             resultString += "\(stringConnector)\(keyValueString)"
             
             stringConnector = "&"
@@ -581,9 +592,9 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     
     func getKeyValueData()->NSData{
         
-        var resultData:NSMutableData = NSMutableData()
+        let resultData:NSMutableData = NSMutableData()
         
-        var stringConnector = ""
+        let stringConnector = ""
         
         let chars = NSCharacterSet.URLPathAllowedCharacterSet().mutableCopy().invertedSet as! NSMutableCharacterSet
         chars.addCharactersInString("+")
@@ -591,7 +602,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
         
         for param in self.finalParams {
             let encodedValue = param.value.stringByAddingPercentEncodingWithAllowedCharacters(chars) ?? ""
-            var keyValueString = "\(param.key)=\(encodedValue)"
+            let keyValueString = "\(param.key)=\(encodedValue)"
             
             resultData.appendData("\(stringConnector)\(keyValueString)".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
             
@@ -616,7 +627,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     
     func getFileUploadData()->NSData{
         
-        var data = NSMutableData()
+        let data = NSMutableData()
         
         var fileBoundary = ""
         switch self.inputValueType {
@@ -644,7 +655,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
                 data.appendData("\(encodedValue)\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
                 
             case .File:
-                var fileparam = param as! GZHTTPConnectionFileValueParam
+                let fileparam = param as! GZHTTPConnectionFileValueParam
                 
                 data.appendData("Content-Disposition: form-data; name=\"\(param.key)\"; filename=\"\(fileparam.filenmae)\"\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
                 data.appendData("Content-Type: \(fileparam.contentType.rawValue)\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: true) ?? NSData())
@@ -663,7 +674,7 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     
     func senderString() -> String {
         
-        var resultString = self.getKeyValueString()
+        let resultString = self.getKeyValueString()
         
         return resultString
     }
@@ -672,11 +683,14 @@ class GZHTTPConnectionData:NSObject, NSURLSessionDelegate, NSURLSessionTaskDeleg
     func senderData() -> NSData {
         
         var data:NSData?
-        var jsonError:NSError?
         
         switch(self.inputValueType){
         case .JSON:
-            data = NSJSONSerialization.dataWithJSONObject(self.getJSONObject(), options: NSJSONWritingOptions.PrettyPrinted, error: &jsonError)
+            do {
+                data = try NSJSONSerialization.dataWithJSONObject(self.getJSONObject(), options: NSJSONWritingOptions.PrettyPrinted)
+            } catch _ as NSError {
+                data = nil
+            }
             
         case .KeyValue:
             data = self.getKeyValueData()//self.senderString().dataUsingEncoding(NSUTF8StringEncoding)

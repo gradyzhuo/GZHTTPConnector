@@ -27,7 +27,7 @@ infix operator << { precedence 160 }
 func <<(value:[AnyObject], separator:String)->String{
     
     var str : String = ""
-    for (idx, item) in enumerate(value) {
+    for (idx, item) in value.enumerate() {
         str += "\(item)"
         if idx < value.count-1 {
             str += separator
@@ -44,7 +44,7 @@ func &(key:String, getValue: ()->String)(connectionData:GZHTTPConnectionData)->G
 
 func &(key:String, @autoclosure getValue: ()->GZHTTPConnectionParamBasicType)(connectionData:GZHTTPConnectionData)->GZHTTPConnectionValueParam{
     
-    var value = getValue()
+    let value = getValue()
     
     switch value {
     case let intValue as Int:
